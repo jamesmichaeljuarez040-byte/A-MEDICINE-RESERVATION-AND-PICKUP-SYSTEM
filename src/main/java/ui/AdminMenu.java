@@ -8,7 +8,11 @@ import java.util.Scanner;
 
 /**
  * Admin menu. Uses the shared UserDao and Scanner passed in from Authentication.
+<<<<<<< HEAD
  * The admin views all users, views pending registrations and approves accounts.
+=======
+ * The admin reviews PENDING accounts and approves or rejects them.
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
  */
 public class AdminMenu {
 
@@ -27,9 +31,15 @@ public class AdminMenu {
         while (loggedIn) {
             System.out.println("\n--- ADMIN MENU ---");
             System.out.println("Welcome, " + user.username());
+<<<<<<< HEAD
             System.out.println("[1] View All System Users");
             System.out.println("[2] View Pending Registrations");
             System.out.println("[3] Approve User Account");
+=======
+            System.out.println("[1] View Pending Accounts");
+            System.out.println("[2] Approve Account");
+            System.out.println("[3] Reject Account");
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
             System.out.println("[4] Logout");
             System.out.print("Choose: ");
 
@@ -37,9 +47,15 @@ public class AdminMenu {
                 return;
             }
             switch (scanner.nextLine().trim()) {
+<<<<<<< HEAD
                 case "1" -> viewAllUsers();
                 case "2" -> viewPendingUsers();
                 case "3" -> approveUser();
+=======
+                case "1" -> showPending();
+                case "2" -> changeStatus("ACTIVE", "approve");
+                case "3" -> changeStatus("REJECTED", "reject");
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
                 case "4" -> {
                     System.out.println("You have been logged out.");
                     loggedIn = false;
@@ -49,6 +65,7 @@ public class AdminMenu {
         }
     }
 
+<<<<<<< HEAD
     private void viewAllUsers() {
         System.out.println("\n--- ALL SYSTEM USERS ---");
         printUserTable(userDao.getAllUsers());
@@ -72,22 +89,55 @@ public class AdminMenu {
             return;
         }
         String input = scanner.nextLine().trim();
+=======
+    /** Prints the pending list and returns it. */
+    private List<User> showPending() {
+        List<User> pending = userDao.findByStatus("PENDING");
+        System.out.println("\n--- PENDING ACCOUNTS ---");
+        if (pending.isEmpty()) {
+            System.out.println("No pending accounts.");
+        } else {
+            System.out.printf("%-5s %-20s %-12s%n", "ID", "USERNAME", "ROLE");
+            for (User u : pending) {
+                System.out.printf("%-5d %-20s %-12s%n", u.id(), u.username(), u.roles());
+            }
+        }
+        return pending;
+    }
+
+    private void changeStatus(String newStatus, String action) {
+        List<User> pending = showPending();
+        if (pending.isEmpty()) {
+            return;
+        }
+        System.out.print("Enter the ID of the account to " + action + " (or press Enter to cancel): ");
+        String input = scanner.nextLine().trim();
+        if (input.isEmpty()) {
+            System.out.println("Cancelled.");
+            return;
+        }
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
 
         int id;
         try {
             id = Integer.parseInt(input);
         } catch (NumberFormatException e) {
+<<<<<<< HEAD
             System.out.println("Invalid ID. Please enter a number.");
             return;
         }
 
         if (id == 0) {
             System.out.println("Approval cancelled.");
+=======
+            System.out.println("Invalid ID.");
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
             return;
         }
 
         User target = pending.stream().filter(u -> u.id() == id).findFirst().orElse(null);
         if (target == null) {
+<<<<<<< HEAD
             System.out.println("No pending account with ID " + id + ".");
             return;
         }
@@ -122,4 +172,16 @@ public class AdminMenu {
     private String fit(String text, int width) {
         return text.length() <= width ? text : text.substring(0, width - 1) + "~";
     }
+=======
+            System.out.println("No pending account with that ID.");
+            return;
+        }
+
+        if (userDao.updateStatus(id, newStatus)) {
+            System.out.println("Account '" + target.username() + "' is now " + newStatus + ".");
+        } else {
+            System.out.println("Update failed. Please try again.");
+        }
+    }
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
 }

@@ -16,5 +16,10 @@ Requires JDK 17+ and Maven. The `medicine_reservation.db` file is created automa
 New accounts are saved with status `PENDING` and cannot log in until an admin approves them.
 
 ## Default admin
+<<<<<<< HEAD
 A first admin is created automatically on first run: username `admin`, password `admin123` (status `APPROVED`).
 Log in as admin -> **View All Users / View Pending / Approve User** (enter `0` to cancel).
+=======
+A first admin is created automatically on first run: username `admin`, password `admin123` (status `ACTIVE`).
+Log in as admin -> **View Pending Accounts / Approve / Reject**.
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b

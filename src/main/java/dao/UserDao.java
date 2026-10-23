@@ -84,6 +84,7 @@ public class UserDao {
         }
     }
 
+<<<<<<< HEAD
     /** Returns all registered accounts, regardless of role or status. */
     public List<User> getAllUsers() {
         return queryUsers("SELECT id, username, password, roles, status FROM users ORDER BY id", null);
@@ -114,6 +115,15 @@ public class UserDao {
             if (param != null) {
                 ps.setString(1, param);
             }
+=======
+    /** Returns all users with the given status, oldest first. */
+    public List<User> findByStatus(String status) {
+        String sql = "SELECT id, username, password, roles, status FROM users WHERE status = ? ORDER BY id";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     users.add(new User(
@@ -130,6 +140,22 @@ public class UserDao {
         }
     }
 
+<<<<<<< HEAD
+=======
+    /** Changes a user's status (e.g. PENDING -> ACTIVE or REJECTED). */
+    public boolean updateStatus(int id, String status) {
+        String sql = "UPDATE users SET status = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, id);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error: " + e.getMessage(), e);
+        }
+    }
+
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
     private String hash(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

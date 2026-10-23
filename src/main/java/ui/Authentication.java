@@ -109,8 +109,14 @@ public class Authentication {
         }
         User user = result.get();
         switch (user.status()) {
+<<<<<<< HEAD
             case "APPROVED" -> routeByRole(user);
             case "PENDING" -> System.out.println("Your account is still PENDING. Please wait for an admin to approve it.");
+=======
+            case "ACTIVE" -> routeByRole(user);
+            case "PENDING" -> System.out.println("Your account is still PENDING. Please wait for an admin to approve it.");
+            case "REJECTED" -> System.out.println("Your account registration was REJECTED by an admin.");
+>>>>>>> c8a13d48b8ddebc616480820bba7e7146ee3a01b
             default -> System.out.println("Your account cannot log in (status: " + user.status() + ").");
         }
     }
