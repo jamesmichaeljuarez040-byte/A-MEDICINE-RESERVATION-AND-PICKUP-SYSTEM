@@ -88,7 +88,7 @@ public class MainMenu {
 
         Optional<User> user = userDao.login(username, password);
         if (user.isPresent()) {
-            new UserMenu(user.get(), scanner).show();
+            new UserMenu(user.get(), scanner, userDao).show();
         } else {
             System.out.println("Invalid username or password.");
         }
