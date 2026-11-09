@@ -2,22 +2,40 @@ package dao;
 
 import model.User;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.Optional;
 
-/**
- * Data access for the users table. All queries use PreparedStatement.
- */
 public class UserDao {
+
+    private User map(ResultSet rs) throws SQLException {
+        return new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"),
+                rs.getString("roles"), rs.getString("status"));
+    }
+
+    /** Registers a new account with status PENDING. Returns the new id, or -1 on failure. */
+    public int registerUser(String username, String password, String role) {
+        String sql = "INSERT INTO users (username, password, roles, status) VALUES (?, ?, ?, 'PENDING')";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ps.setString(3, role.toUpperCase());
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Registration error: " + e.getMessage());
+        }
+        return -1;
+    }
 
     public boolean usernameExists(String username) {
         String sql = "SELECT 1 FROM users WHERE username = ?";
@@ -28,69 +46,63 @@ public class UserDao {
                 return rs.next();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Database error: " + e.getMessage(), e);
+            System.out.println("Error: " + e.getMessage());
+            return true;
         }
     }
 
-    /** Saves a new user. Status is always PENDING by default. */
-    public boolean register(String username, String password, String roles) {
-        String sql = "INSERT INTO users (username, password, roles, status) VALUES (?, ?, ?, 'PENDING')";
+    /** Returns the user when credentials match, otherwise null. */
+    public User login(String username, String password) {
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
-            ps.setString(2, hash(password));
-            ps.setString(3, roles);
-            return ps.executeUpdate() == 1;
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    /** Verifies username and password. Returns the user if credentials match. */
-    public Optional<User> login(String username, String password) {
-        String sql = "SELECT id, username, password, roles, status FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username);
-            ps.setString(2, hash(password));
+            ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(new User(
-                            rs.getInt("id"),
-                            rs.getString("username"),
-                            rs.getString("password"),
-                            rs.getString("roles"),
-                            rs.getString("status")));
+                    return map(rs);
                 }
-                return Optional.empty();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Database error: " + e.getMessage(), e);
+            System.out.println("Login error: " + e.getMessage());
         }
+        return null;
     }
 
-    /** Returns every user, ordered by id. */
     public List<User> getAllUsers() {
-        String sql = "SELECT id, username, password, roles, status FROM users ORDER BY id";
-        List<User> users = new ArrayList<>();
+        return query("SELECT * FROM users ORDER BY id");
+    }
+
+    public List<User> getPendingUsers() {
+        return query("SELECT * FROM users WHERE status = 'PENDING' ORDER BY id");
+    }
+
+    private List<User> query(String sql) {
+        List<User> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                users.add(new User(
-                        rs.getInt("id"),
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("roles"),
-                        rs.getString("status")));
+                list.add(map(rs));
             }
-            return users;
         } catch (SQLException e) {
-            throw new RuntimeException("Database error: " + e.getMessage(), e);
+            System.out.println("Query error: " + e.getMessage());
+        }
+        return list;
+    }
+
+    public boolean approveUser(int userId) {
+        String sql = "UPDATE users SET status = 'APPROVED' WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Approve error: " + e.getMessage());
+            return false;
         }
     }
 
-    /** Updates a user's role and status. Inputs are converted to upper case. Returns true if a row changed. */
     public boolean updateUserRoleAndStatus(int userId, String newRole, String newStatus) {
         String sql = "UPDATE users SET roles = ?, status = ? WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -98,18 +110,10 @@ public class UserDao {
             ps.setString(1, newRole.toUpperCase());
             ps.setString(2, newStatus.toUpperCase());
             ps.setInt(3, userId);
-            return ps.executeUpdate() == 1;
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
+            System.out.println("Update error: " + e.getMessage());
             return false;
-        }
-    }
-
-    private String hash(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(md.digest(password.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
         }
     }
 }
